@@ -1,16 +1,48 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from .config import get_settings
+from .db import engine
+from .db import Base
+from .routers_auth import router as auth_router
+from .routers_users import router as users_router
+from .routers_recipes import router as recipes_router
 
+settings = get_settings()
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    description=settings.APP_DESCRIPTION,
+    version=settings.APP_VERSION,
+    contact={"name": "Recipe Hub"},
+    license_info={"name": "MIT"},
+    openapi_tags=[
+        {"name": "auth", "description": "Authentication endpoints"},
+        {"name": "users", "description": "User management"},
+        {"name": "recipes", "description": "Recipe operations"},
+    ],
+)
+
+# Configure CORS
+origins = ["*"]
+if settings.REACT_APP_FRONTEND_URL:
+    origins = [settings.REACT_APP_FRONTEND_URL]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/")
+# Create tables (simple auto-migrate for SQLite demo)
+Base.metadata.create_all(bind=engine)
+
+@app.get("/", tags=["health"], summary="Health Check", description="Simple health check endpoint.")
 def health_check():
     return {"message": "Healthy"}
+
+# Include routers
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(recipes_router)
