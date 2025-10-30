@@ -20,10 +20,11 @@ app = FastAPI(
         {"name": "auth", "description": "Authentication endpoints"},
         {"name": "users", "description": "User management"},
         {"name": "recipes", "description": "Recipe operations"},
+        {"name": "health", "description": "Service health and status"},
     ],
 )
 
-# Configure CORS
+# Configure CORS with allowed origins
 origins = ["*"]
 if settings.REACT_APP_FRONTEND_URL:
     origins = [settings.REACT_APP_FRONTEND_URL]
@@ -40,6 +41,7 @@ Base.metadata.create_all(bind=engine)
 
 @app.get("/", tags=["health"], summary="Health Check", description="Simple health check endpoint.")
 def health_check():
+    """Return a simple health payload to verify the API is running."""
     return {"message": "Healthy"}
 
 # Include routers

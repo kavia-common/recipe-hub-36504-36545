@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any, Dict
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from .db import get_db
@@ -14,6 +14,7 @@ from .services.recipe_service import (
     update_user_recipe,
     delete_user_recipe,
 )
+from .utils.pagination import paginate_items
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -29,14 +30,35 @@ def create_recipe(payload: RecipeCreate, db: Session = Depends(get_db), user: Us
     )
 
 
-@router.get("/", response_model=List[RecipeOut], summary="List recipes", description="List all recipes.")
-def list_recipes(db: Session = Depends(get_db)) -> list[Recipe]:
-    return list_all_recipes(db)
+@router.get(
+    "/",
+    summary="List recipes",
+    description="List all recipes with simple pagination.",
+    response_description="Paginated list of recipes",
+)
+def list_recipes(
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1, description="1-based page number"),
+    page_size: int = Query(10, ge=1, le=100, description="Items per page"),
+) -> Dict[str, Any]:
+    items = list_all_recipes(db)
+    return paginate_items(items, page=page, page_size=page_size)
 
 
-@router.get("/mine", response_model=List[RecipeOut], summary="List my recipes", description="List recipes owned by the current user.")
-def list_my_recipes(db: Session = Depends(get_db), user: User = Depends(current_user)) -> list[Recipe]:
-    return list_user_recipes(db, user)
+@router.get(
+    "/mine",
+    summary="List my recipes",
+    description="List recipes owned by the current user with simple pagination.",
+    response_description="Paginated list of recipes owned by the current user",
+)
+def list_my_recipes(
+    db: Session = Depends(get_db),
+    user: User = Depends(current_user),
+    page: int = Query(1, ge=1, description="1-based page number"),
+    page_size: int = Query(10, ge=1, le=100, description="Items per page"),
+) -> Dict[str, Any]:
+    items = list_user_recipes(db, user)
+    return paginate_items(items, page=page, page_size=page_size)
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut, summary="Get recipe", description="Get a recipe by id.")

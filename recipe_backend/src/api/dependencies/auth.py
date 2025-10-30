@@ -17,6 +17,7 @@ def current_user(
     This wraps security.get_current_user to provide a single import path for
     dependencies and to make it easy to swap implementations in the future.
     """
+    # Return the user extracted by the underlying security dependency
     return token_user
 
 
@@ -28,8 +29,9 @@ def recipe_owned_by_current_user(
 ) -> Recipe:
     """Dependency ensuring the recipe exists and is owned by the current user.
 
-    Raises 404 if the recipe does not exist and 403 if the recipe is not owned
-    by the currently authenticated user.
+    Raises:
+        HTTPException 404: If the recipe does not exist.
+        HTTPException 403: If the recipe is not owned by the authenticated user.
     """
     recipe = get_recipe_or_404(db, recipe_id)
     if not recipe:
